@@ -4,12 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🇧🇷 Painel Nacional de Municípios</title>
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet" />
     <style>
-        /* RESET & BASE */
         * {
             margin: 0;
             padding: 0;
@@ -26,8 +23,6 @@
             max-width: 1400px;
             margin: 0 auto;
         }
-
-        /* HEADER */
         .header {
             display: flex;
             align-items: center;
@@ -91,7 +86,6 @@
             background: #2d2d44 !important;
         }
 
-        /* VIEWS */
         .view {
             display: none;
             animation: fadeUp 0.35s ease;
@@ -110,7 +104,6 @@
             }
         }
 
-        /* CARDS E STATS */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -148,7 +141,6 @@
             margin-top: 4px;
         }
 
-        /* SEARCH */
         .search-bar {
             display: flex;
             gap: 12px;
@@ -172,7 +164,6 @@
             box-shadow: 0 0 0 4px rgba(26, 26, 46, 0.06);
         }
 
-        /* RANKING */
         .ranking-container {
             background: white;
             border-radius: 28px;
@@ -218,7 +209,6 @@
             color: #6b7a93;
         }
 
-        /* ESTADOS CARDS (home) */
         .estados-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -258,8 +248,15 @@
             color: #6b7a93;
             margin-top: 2px;
         }
+        .estado-card .flag-icon {
+            width: 40px;
+            height: 30px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            border: 1px solid #ddd;
+        }
 
-        /* MAPA */
         .map-wrapper {
             border-radius: 28px;
             overflow: hidden;
@@ -274,7 +271,6 @@
             width: 100%;
         }
 
-        /* STATE / CITY VIEW */
         .view-header {
             display: flex;
             align-items: center;
@@ -314,7 +310,8 @@
         }
 
         .lista-municipios,
-        .lista-ruas {
+        .lista-ruas,
+        .lista-empresas {
             background: white;
             border-radius: 28px;
             padding: 16px 20px;
@@ -323,7 +320,8 @@
             overflow-y: auto;
         }
         .lista-municipios .item,
-        .lista-ruas .item {
+        .lista-ruas .item,
+        .lista-empresas .item {
             padding: 10px 12px;
             border-bottom: 1px solid #f0f2f7;
             cursor: pointer;
@@ -332,19 +330,66 @@
             font-size: 14px;
         }
         .lista-municipios .item:hover,
-        .lista-ruas .item:hover {
+        .lista-ruas .item:hover,
+        .lista-empresas .item:hover {
             background: #f8f9fd;
         }
         .lista-municipios .item:last-child,
-        .lista-ruas .item:last-child {
+        .lista-ruas .item:last-child,
+        .lista-empresas .item:last-child {
             border-bottom: none;
         }
 
-        .rua-busca {
+        .empresa-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .empresa-table th {
+            background: #f4f6fb;
+            padding: 8px 12px;
+            text-align: left;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .empresa-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #f0f2f7;
+        }
+        .empresa-table tr:hover td {
+            background: #f8f9fd;
+        }
+        .sort-indicator {
+            font-size: 12px;
+            margin-left: 4px;
+        }
+        .tab-bar {
+            display: flex;
+            gap: 8px;
             margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .tab-bar button {
+            background: white;
+            border: 1px solid #dce0e9;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .tab-bar button.active-tab {
+            background: #1a1a2e;
+            color: white;
+            border-color: #1a1a2e;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active-tab-content {
+            display: block;
         }
 
-        /* RESPONSIVE */
         @media (max-width: 700px) {
             .header h1 {
                 font-size: 20px;
@@ -367,8 +412,6 @@
                 grid-template-columns: 1fr;
             }
         }
-
-        /* utilities */
         .hidden {
             display: none !important;
         }
@@ -378,12 +421,28 @@
         .mt-16 {
             margin-top: 16px;
         }
+        .flag-marker {
+            text-align: center;
+            line-height: 30px;
+        }
+        .flag-marker img {
+            width: 32px;
+            height: 24px;
+            border-radius: 4px;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .estado-card .flag-icon {
+            width: 50px;
+            height: 35px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
     <div class="app" id="app">
-
-        <!-- HEADER -->
         <header class="header">
             <h1>🇧🇷 <span>Painel Nacional</span></h1>
             <div class="nav-buttons">
@@ -395,19 +454,15 @@
         <!-- VIEW HOME -->
         <div id="viewHome" class="view active">
             <div class="stats-grid" id="statsHome"></div>
-
             <div class="search-bar">
                 <input type="text" id="searchEstado" placeholder="🔍 Buscar estado..." />
                 <input type="text" id="searchMunicipio" placeholder="🔍 Buscar município..." />
             </div>
-
             <div class="estados-grid" id="estadosGrid"></div>
-
             <div class="ranking-container">
                 <h3>🏆 Ranking de estados por número de municípios</h3>
                 <div class="ranking-list" id="rankingList"></div>
             </div>
-
             <div class="map-wrapper" id="mapHomeWrapper">
                 <div id="mapHome" style="height:100%;width:100%;"></div>
             </div>
@@ -420,13 +475,25 @@
                 <span class="badge" id="stateBadge">UF</span>
             </div>
             <div class="view-stats" id="stateStats"></div>
+            <!-- Abas: Municípios, Empresas -->
+            <div class="tab-bar">
+                <button class="active-tab" data-tab="tabMunicipiosState">Municípios</button>
+                <button data-tab="tabEmpresasState">Empresas (Ranking)</button>
+            </div>
+            <div id="tabMunicipiosState" class="tab-content active-tab-content">
+                <div class="search-bar">
+                    <input type="text" id="searchMunicipioState" placeholder="🔍 Buscar município..." />
+                </div>
+                <div class="lista-municipios" id="listaMunicipiosState"></div>
+            </div>
+            <div id="tabEmpresasState" class="tab-content">
+                <div class="ranking-container" style="max-height:400px; overflow-y:auto;">
+                    <div id="empresasStateContainer"></div>
+                </div>
+            </div>
             <div class="map-wrapper" id="mapStateWrapper">
                 <div id="mapState" style="height:100%;width:100%;"></div>
             </div>
-            <div class="search-bar">
-                <input type="text" id="searchMunicipioState" placeholder="🔍 Buscar município..." />
-            </div>
-            <div class="lista-municipios" id="listaMunicipiosState"></div>
         </div>
 
         <!-- VIEW CITY -->
@@ -436,37 +503,112 @@
                 <span class="badge" id="cityBadge">UF</span>
             </div>
             <div class="view-stats" id="cityStats"></div>
+            <div class="tab-bar">
+                <button class="active-tab" data-tab="tabRuas">Logradouros</button>
+                <button data-tab="tabEmpresasCity">Empresas</button>
+            </div>
+            <div id="tabRuas" class="tab-content active-tab-content">
+                <div class="search-bar rua-busca">
+                    <input type="text" id="searchRua" placeholder="🔍 Pesquisar rua..." />
+                </div>
+                <div class="lista-ruas" id="listaRuas"></div>
+            </div>
+            <div id="tabEmpresasCity" class="tab-content">
+                <div class="ranking-container" style="max-height:400px; overflow-y:auto;">
+                    <div id="empresasCityContainer"></div>
+                </div>
+            </div>
             <div class="map-wrapper" id="mapCityWrapper">
                 <div id="mapCity" style="height:100%;width:100%;"></div>
             </div>
-            <div class="search-bar rua-busca">
-                <input type="text" id="searchRua" placeholder="🔍 Pesquisar rua..." />
-            </div>
-            <div class="lista-ruas" id="listaRuas"></div>
         </div>
-
     </div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         // ============================================================
-        //  DADOS MOCK (bairros e ruas)
+        //  DADOS MOCK (bairros, ruas, empresas, indústria)
         // ============================================================
-        const MOCK_BAIRROS = [
-            'Centro', 'Jardim América', 'Vila Nova', 'Bela Vista', 'Santa Teresa',
+        const MOCK_BAIRROS = ['Centro', 'Jardim América', 'Vila Nova', 'Bela Vista', 'Santa Teresa',
             'Copacabana', 'Ipanema', 'Leblon', 'Barra', 'Tijuca',
             'Mooca', 'Vila Mariana', 'Pinheiros', 'Butantã', 'Morumbi',
             'Boa Viagem', 'Pina', 'Candeias', 'Madalena', 'Espinheiro'
         ];
-        const MOCK_RUAS = [
-            'Rua das Flores', 'Avenida Brasil', 'Rua XV de Novembro', 'Rua Marechal Deodoro',
+        const MOCK_RUAS = ['Rua das Flores', 'Avenida Brasil', 'Rua XV de Novembro', 'Rua Marechal Deodoro',
             'Avenida Getúlio Vargas', 'Rua Dom Pedro I', 'Rua José Bonifácio', 'Rua Duque de Caxias',
             'Avenida Rio Branco', 'Rua Tiradentes', 'Rua Santo Antônio', 'Rua São João',
             'Avenida Beira-Mar', 'Rua do Comércio', 'Rua das Palmeiras', 'Rua da Saudade',
             'Travessa da Alegria', 'Avenida dos Estados', 'Rua da Independência', 'Rua da Paz'
         ];
+        // Setores industriais por estado (mock)
+        const SETORES = ['Tecnologia', 'Agronegócio', 'Indústria Automotiva', 'Petroquímica', 'Têxtil', 'Siderurgia',
+            'Turismo', 'Finanças', 'Logística', 'Energia'
+        ];
 
+        // Gerador de empresas mock
+        const NOMES_EMPRESAS = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Omega', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Psi',
+            'Solar', 'Lunar', 'Nova', 'Vera', 'Certa', 'Forte', 'Rápida', 'União', 'Nacional', 'Brasil'
+        ];
+
+        function gerarEmpresa(id, estadoSigla, cidadeNome) {
+            const nome = NOMES_EMPRESAS[Math.floor(Math.random() * NOMES_EMPRESAS.length)] +
+                (Math.random() > 0.5 ? ' ' + ['Indústria', 'Comércio', 'Serviços', 'Logística', 'Consultoria'][Math.floor(Math
+                    .random() * 5)] : '');
+            const faturamento = (Math.random() * 500 + 10).toFixed(1);
+            const empregados = Math.floor(Math.random() * 2000 + 50);
+            const desenvolvimento = (Math.random() * 5 + 5).toFixed(1);
+            return {
+                id: id,
+                nome: nome,
+                faturamento: parseFloat(faturamento),
+                empregados: empregados,
+                desenvolvimento: parseFloat(desenvolvimento),
+                cidade: cidadeNome,
+                estado: estadoSigla
+            };
+        }
+
+        function gerarDadosEconomicos(estadoSigla, cidadeNome, numEmpresas = 15) {
+            const empresas = [];
+            for (let i = 0; i < numEmpresas; i++) {
+                empresas.push(gerarEmpresa(i, estadoSigla, cidadeNome));
+            }
+            // Ordenar por faturamento decrescente
+            empresas.sort((a, b) => b.faturamento - a.faturamento);
+            const setor = SETORES[Math.floor(Math.random() * SETORES.length)];
+            return {
+                setor_industrial: setor,
+                total_empresas: numEmpresas,
+                empresas: empresas
+            };
+        }
+
+        // Cache de dados econômicos por estado e município
+        const econCacheState = new Map();
+        const econCacheCity = new Map();
+
+        function getDadosEconomicosEstado(sigla) {
+            if (!econCacheState.has(sigla)) {
+                const num = Math.floor(Math.random() * 80 + 20);
+                const data = gerarDadosEconomicos(sigla, 'Estado', num);
+                econCacheState.set(sigla, data);
+            }
+            return econCacheState.get(sigla);
+        }
+
+        function getDadosEconomicosCity(cityId, cityNome, sigla) {
+            const key = sigla + '-' + cityId;
+            if (!econCacheCity.has(key)) {
+                const num = Math.floor(Math.random() * 15 + 5);
+                const data = gerarDadosEconomicos(sigla, cityNome, num);
+                econCacheCity.set(key, data);
+            }
+            return econCacheCity.get(key);
+        }
+
+        // ============================================================
+        //  DADOS MOCK (bairros e ruas)
+        // ============================================================
         function gerarDadosMock(cidadeId, populacaoBase) {
             const qtdBairros = Math.floor(Math.random() * 20) + 5;
             const qtdRuas = Math.floor(Math.random() * 40) + 10;
@@ -484,8 +626,6 @@
                 ruas: ruas
             };
         }
-
-        // Cache de dados mock por ID do município
         const mockCache = new Map();
 
         function getDadosMock(cidadeId, populacaoBase) {
@@ -496,7 +636,7 @@
         }
 
         // ============================================================
-        //  COORDENADAS APROXIMADAS DOS ESTADOS (lat, lng)
+        //  COORDENADAS E BANDEIRAS
         // ============================================================
         const COORDS_ESTADOS = {
             'AC': [-9.0238, -70.8120],
@@ -528,25 +668,27 @@
             'TO': [-10.1842, -48.3333]
         };
 
+        const FLAG_BASE_URL = 'https://raw.githubusercontent.com/igorantun/bandeiras-estados-brasil/master/bandeiras/';
+
+        function getFlagUrl(sigla) {
+            return FLAG_BASE_URL + sigla + '.svg?raw=true';
+        }
+
         // ============================================================
         //  ESTADO GLOBAL
         // ============================================================
         let estados = [];
         let municipios = [];
-        let municipiosPorEstado = {}; // sigla -> array de municípios
+        let municipiosPorEstado = {};
         let mapHome, mapState, mapCity;
         let estadoAtual = null;
         let municipioAtual = null;
 
-        // ============================================================
-        //  FUNÇÕES AUXILIARES
-        // ============================================================
         function $(id) { return document.getElementById(id); }
 
         function showView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             $(viewId).classList.add('active');
-            // Botão voltar
             if (viewId === 'viewHome') {
                 $('btnBack').classList.add('hidden');
                 $('btnHome').classList.add('active');
@@ -556,7 +698,6 @@
             }
         }
 
-        // Inicializa mapa
         function initMap(containerId, center = [-15.7885, -47.8792], zoom = 4) {
             const map = L.map(containerId).setView(center, zoom);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -570,55 +711,47 @@
         // ============================================================
         async function carregarDados() {
             try {
-                // Estados
                 const respEstados = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome');
                 estados = await respEstados.json();
-
-                // Municípios
                 const respMunicipios = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/municipios');
                 const allMunicipios = await respMunicipios.json();
-
-                // Agrupar por UF
+                municipios = allMunicipios;
                 municipiosPorEstado = {};
-                estados.forEach(uf => {
-                    municipiosPorEstado[uf.sigla] = [];
-                });
+                estados.forEach(uf => { municipiosPorEstado[uf.sigla] = []; });
                 allMunicipios.forEach(m => {
                     const sigla = m.microrregiao.mesorregiao.UF.sigla;
-                    if (municipiosPorEstado[sigla]) {
-                        municipiosPorEstado[sigla].push(m);
-                    }
+                    if (municipiosPorEstado[sigla]) municipiosPorEstado[sigla].push(m);
                 });
-                // Ordenar municípios por nome
                 for (let sigla in municipiosPorEstado) {
                     municipiosPorEstado[sigla].sort((a, b) => a.nome.localeCompare(b.nome));
                 }
-                // Total de municípios
-                const totalMunicipios = allMunicipios.length;
-
-                // Guardar referência
-                municipios = allMunicipios;
-
-                // Atualizar home
                 renderHome();
-
-                // Inicializar mapa home
                 mapHome = initMap('mapHome');
                 adicionarMarcadoresEstados(mapHome);
-
-                // Configurar buscas
                 $('searchEstado').addEventListener('input', filtrarEstados);
                 $('searchMunicipio').addEventListener('input', filtrarMunicipiosHome);
-
-                // Botão voltar
                 $('btnBack').addEventListener('click', voltarHome);
-
-                // Inicialmente, voltar para home
+                // Abas
+                document.querySelectorAll('.tab-bar').forEach(bar => {
+                    bar.querySelectorAll('button').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const parent = this.closest('.tab-bar');
+                            parent.querySelectorAll('button').forEach(b => b.classList.remove(
+                            'active-tab'));
+                            this.classList.add('active-tab');
+                            const target = this.dataset.tab;
+                            const container = parent.parentElement;
+                            container.querySelectorAll('.tab-content').forEach(tc => tc.classList
+                                .remove('active-tab-content'));
+                            container.querySelector('#' + target).classList.add(
+                            'active-tab-content');
+                        });
+                    });
+                });
                 showView('viewHome');
-
             } catch (err) {
-                console.error('Erro ao carregar dados do IBGE:', err);
-                alert('Não foi possível carregar os dados do IBGE. Tente novamente mais tarde.');
+                console.error(err);
+                alert('Erro ao carregar dados do IBGE.');
             }
         }
 
@@ -626,25 +759,20 @@
         //  RENDER HOME
         // ============================================================
         function renderHome() {
-            // Stats
             const totalEstados = estados.length;
             const totalMunicipios = municipios.length;
-            const totalBairros = Math.floor(Math.random() * 100000) + 50000; // mock
-            const totalRuas = Math.floor(Math.random() * 200000) + 100000; // mock
-
+            const totalBairros = Math.floor(Math.random() * 100000) + 50000;
+            const totalRuas = Math.floor(Math.random() * 200000) + 100000;
             $('statsHome').innerHTML = `
                 <div class="stat-card"><div class="label">🇧🇷 Estados</div><div class="value">${totalEstados}</div></div>
                 <div class="stat-card"><div class="label">🏙️ Municípios</div><div class="value">${totalMunicipios.toLocaleString()}</div></div>
                 <div class="stat-card"><div class="label">🏘️ Bairros</div><div class="value">${totalBairros.toLocaleString()}</div><div class="sub">estimativa</div></div>
                 <div class="stat-card"><div class="label">🛣️ Ruas</div><div class="value">${totalRuas.toLocaleString()}</div><div class="sub">estimativa</div></div>
             `;
-
-            // Ranking
             const ranking = estados.map(uf => {
                 const count = municipiosPorEstado[uf.sigla] ? municipiosPorEstado[uf.sigla].length : 0;
                 return { ...uf, count };
             }).sort((a, b) => b.count - a.count);
-
             $('rankingList').innerHTML = ranking.map((uf, idx) => `
                 <div class="ranking-item" data-sigla="${uf.sigla}">
                     <span class="pos">#${idx+1}</span>
@@ -652,16 +780,9 @@
                     <span class="count">${uf.count} municípios</span>
                 </div>
             `).join('');
-
-            // Clique no ranking vai para o estado
             document.querySelectorAll('.ranking-item').forEach(el => {
-                el.addEventListener('click', () => {
-                    const sigla = el.dataset.sigla;
-                    abrirEstado(sigla);
-                });
+                el.addEventListener('click', () => abrirEstado(el.dataset.sigla));
             });
-
-            // Cards de estados
             renderCardsEstados(estados);
         }
 
@@ -671,6 +792,7 @@
                 const count = municipiosPorEstado[uf.sigla] ? municipiosPorEstado[uf.sigla].length : 0;
                 return `
                     <div class="estado-card" data-sigla="${uf.sigla}">
+                        <img class="flag-icon" src="${getFlagUrl(uf.sigla)}" alt="Bandeira ${uf.sigla}" onerror="this.style.display='none'" />
                         <div class="sigla">${uf.sigla}</div>
                         <div class="nome">${uf.nome}</div>
                         <div class="cidade-count">${count} municípios</div>
@@ -678,18 +800,14 @@
                 `;
             }).join('');
             document.querySelectorAll('.estado-card').forEach(el => {
-                el.addEventListener('click', () => {
-                    const sigla = el.dataset.sigla;
-                    abrirEstado(sigla);
-                });
+                el.addEventListener('click', () => abrirEstado(el.dataset.sigla));
             });
         }
 
         function filtrarEstados() {
             const termo = $('searchEstado').value.toLowerCase().trim();
             const filtrados = estados.filter(uf =>
-                uf.nome.toLowerCase().includes(termo) ||
-                uf.sigla.toLowerCase().includes(termo)
+                uf.nome.toLowerCase().includes(termo) || uf.sigla.toLowerCase().includes(termo)
             );
             renderCardsEstados(filtrados);
         }
@@ -697,44 +815,33 @@
         function filtrarMunicipiosHome() {
             const termo = $('searchMunicipio').value.toLowerCase().trim();
             if (termo.length < 2) return;
-            const encontrados = municipios.filter(m =>
-                m.nome.toLowerCase().includes(termo)
-            );
+            const encontrados = municipios.filter(m => m.nome.toLowerCase().includes(termo));
             if (encontrados.length > 0) {
-                // Mostrar sugestão simples: vai para o primeiro
                 const primeiro = encontrados[0];
-                // Encontrar o estado do município
                 const sigla = primeiro.microrregiao.mesorregiao.UF.sigla;
-                // Abrir estado e depois o município
                 abrirEstado(sigla).then(() => {
-                    // Após carregar o estado, abrir o município
-                    setTimeout(() => {
-                        abrirMunicipio(primeiro.id, sigla);
-                    }, 300);
+                    setTimeout(() => abrirMunicipio(primeiro.id, sigla), 300);
                 });
             }
         }
 
         // ============================================================
-        //  MARCAR ESTADOS NO MAPA HOME
+        //  MARCADORES COM BANDEIRAS NO MAPA HOME
         // ============================================================
         function adicionarMarcadoresEstados(map) {
             estados.forEach(uf => {
                 const coords = COORDS_ESTADOS[uf.sigla];
                 if (!coords) return;
-                const marker = L.circleMarker(coords, {
-                    radius: 8,
-                    fillColor: '#1a1a2e',
-                    color: '#fff',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(map);
-                marker.bindPopup(`<strong>${uf.nome}</strong><br>${municipiosPorEstado[uf.sigla]?.length || 0} municípios`);
-                marker.on('click', () => {
-                    abrirEstado(uf.sigla);
+                const flagUrl = getFlagUrl(uf.sigla);
+                const icon = L.divIcon({
+                    className: 'flag-marker',
+                    html: `<img src="${flagUrl}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ccc%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.35em%22 font-size=%2220%22 fill=%22%23666%22%3E${uf.sigla}%3C/text%3E%3C/svg%3E'" style="width:32px;height:24px;border-radius:4px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);" />`,
+                    iconSize: [32, 24],
+                    iconAnchor: [16, 12]
                 });
-                // Adiciona também um label?
+                const marker = L.marker(coords, { icon: icon }).addTo(map);
+                marker.bindPopup(`<strong>${uf.nome}</strong><br>${municipiosPorEstado[uf.sigla]?.length || 0} municípios`);
+                marker.on('click', () => abrirEstado(uf.sigla));
             });
         }
 
@@ -745,22 +852,19 @@
             const uf = estados.find(e => e.sigla === sigla);
             if (!uf) return;
             estadoAtual = uf;
-
-            // Limpar mapa state se existir
-            if (mapState) {
-                mapState.remove();
-                mapState = null;
-            }
-
+            if (mapState) { mapState.remove();
+                mapState = null; }
             showView('viewState');
-
-            // Título
             $('stateTitle').textContent = uf.nome;
             $('stateBadge').textContent = uf.sigla;
 
             const municipiosUF = municipiosPorEstado[sigla] || [];
             const totalMunicipios = municipiosUF.length;
-            // Mock bairros e ruas para o estado (soma dos municípios)
+            // Dados econômicos
+            const econ = getDadosEconomicosEstado(sigla);
+            const totalEmpresas = econ.total_empresas;
+            const setor = econ.setor_industrial;
+
             let totalBairrosState = 0,
                 totalRuasState = 0;
             municipiosUF.forEach(m => {
@@ -768,43 +872,59 @@
                 totalBairrosState += mock.bairros.length;
                 totalRuasState += mock.ruas.length;
             });
-
             $('stateStats').innerHTML = `
                 <div class="stat-mini">🏙️ <span>Municípios</span> ${totalMunicipios}</div>
                 <div class="stat-mini">🏘️ <span>Bairros</span> ${totalBairrosState.toLocaleString()}</div>
                 <div class="stat-mini">🛣️ <span>Ruas</span> ${totalRuasState.toLocaleString()}</div>
+                <div class="stat-mini">🏭 <span>Forte indústria</span> ${setor}</div>
+                <div class="stat-mini">🏢 <span>Empresas</span> ${totalEmpresas}</div>
             `;
 
             // Lista de municípios
             renderMunicipiosState(municipiosUF);
+            // Empresas do estado
+            renderEmpresasState(econ.empresas);
 
-            // Mapa: carregar GeoJSON do estado
+            // Mapa do estado com borda "muro"
             const mapContainer = $('mapState');
             mapState = initMap('mapState', [-15.7885, -47.8792], 5);
-
             try {
-                const url = `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${sigla}?formato=application/vnd.geo+json&qualidade=minima`;
+                const url =
+                    `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${sigla}?formato=application/vnd.geo+json&qualidade=minima`;
                 const resp = await fetch(url);
                 const geojson = await resp.json();
+                // Estilo com borda grossa e cor viva (muro)
                 const layer = L.geoJSON(geojson, {
-                    style: { color: '#1a1a2e', weight: 2, fillColor: '#d4d9e5', fillOpacity: 0.4 }
+                    style: {
+                        color: '#FF4500',
+                        weight: 6,
+                        opacity: 0.9,
+                        fillColor: '#f0c27f',
+                        fillOpacity: 0.2,
+                        dashArray: null
+                    }
+                }).addTo(mapState);
+                // Adicionar uma segunda linha mais fina para dar efeito de muro
+                L.geoJSON(geojson, {
+                    style: {
+                        color: '#FFD700',
+                        weight: 2,
+                        opacity: 0.6,
+                        fill: false,
+                        dashArray: '4 4'
+                    }
                 }).addTo(mapState);
                 mapState.fitBounds(layer.getBounds());
             } catch (err) {
-                console.warn('Erro ao carregar GeoJSON do estado:', err);
-                // fallback: centralizar nas coordenadas do estado
+                console.warn('Erro GeoJSON:', err);
                 const coords = COORDS_ESTADOS[sigla];
-                if (coords) {
-                    mapState.setView(coords, 7);
-                }
+                if (coords) mapState.setView(coords, 7);
             }
 
             // Busca municípios no state
             $('searchMunicipioState').addEventListener('input', function() {
                 const termo = this.value.toLowerCase().trim();
-                const filtrados = municipiosUF.filter(m =>
-                    m.nome.toLowerCase().includes(termo)
-                );
+                const filtrados = municipiosUF.filter(m => m.nome.toLowerCase().includes(termo));
                 renderMunicipiosState(filtrados);
             });
         }
@@ -825,6 +945,47 @@
             });
         }
 
+        function renderEmpresasState(empresas) {
+            const container = $('empresasStateContainer');
+            let html = `<h4 style="margin-bottom:12px;">Ranking de Empresas (por faturamento)</h4>
+                        <table class="empresa-table" id="empresaTableState">
+                            <thead><tr>
+                                <th data-sort="nome">Nome <span class="sort-indicator">⇅</span></th>
+                                <th data-sort="faturamento">Faturamento (R$ mi) <span class="sort-indicator">⇅</span></th>
+                                <th data-sort="empregados">Empregados <span class="sort-indicator">⇅</span></th>
+                                <th data-sort="desenvolvimento">Desenvolvimento <span class="sort-indicator">⇅</span></th>
+                            </tr></thead>
+                            <tbody id="empresaTableBodyState"></tbody>
+                        </table>`;
+            container.innerHTML = html;
+            const tbody = document.getElementById('empresaTableBodyState');
+            function renderEmpresasOrdenadas(empresas, sortBy = 'faturamento', desc = true) {
+                const sorted = [...empresas].sort((a, b) => {
+                    if (a[sortBy] < b[sortBy]) return desc ? 1 : -1;
+                    if (a[sortBy] > b[sortBy]) return desc ? -1 : 1;
+                    return 0;
+                });
+                tbody.innerHTML = sorted.map(e => `
+                    <tr><td>${e.nome}</td><td>${e.faturamento}</td><td>${e.empregados}</td><td>${e.desenvolvimento}</td></tr>
+                `).join('');
+            }
+            renderEmpresasOrdenadas(empresas);
+            // Ordenação
+            document.querySelectorAll('#empresaTableState th').forEach(th => {
+                th.style.cursor = 'pointer';
+                th.addEventListener('click', function() {
+                    const sortBy = this.dataset.sort;
+                    const current = this.querySelector('.sort-indicator');
+                    const desc = current.textContent.includes('⇅') ? true : false;
+                    // atualizar todos indicadores para ⇅
+                    document.querySelectorAll('#empresaTableState th .sort-indicator').forEach(el => el.textContent =
+                        '⇅');
+                    current.textContent = desc ? '▼' : '▲';
+                    renderEmpresasOrdenadas(empresas, sortBy, desc);
+                });
+            });
+        }
+
         // ============================================================
         //  ABRIR MUNICÍPIO
         // ============================================================
@@ -833,60 +994,54 @@
             if (!municipio) return;
             municipioAtual = municipio;
             const uf = estados.find(e => e.sigla === sigla);
-
-            // Limpar mapa city
-            if (mapCity) {
-                mapCity.remove();
-                mapCity = null;
-            }
-
+            if (mapCity) { mapCity.remove();
+                mapCity = null; }
             showView('viewCity');
-
             $('cityTitle').textContent = municipio.nome;
             $('cityBadge').textContent = sigla;
 
-            // Dados mock
             const mock = getDadosMock(id, 50000);
             const pop = mock.populacao;
             const bairros = mock.bairros;
             const ruas = mock.ruas;
+            // Dados econômicos do município
+            const econCity = getDadosEconomicosCity(id, municipio.nome, sigla);
+            const totalEmpresasCity = econCity.total_empresas;
+            const setorCity = econCity.setor_industrial;
 
             $('cityStats').innerHTML = `
                 <div class="stat-mini">👥 <span>População</span> ${pop.toLocaleString()}</div>
                 <div class="stat-mini">🏘️ <span>Bairros</span> ${bairros.length}</div>
                 <div class="stat-mini">🛣️ <span>Logradouros</span> ${ruas.length}</div>
+                <div class="stat-mini">🏭 <span>Forte indústria</span> ${setorCity}</div>
+                <div class="stat-mini">🏢 <span>Empresas</span> ${totalEmpresasCity}</div>
             `;
 
-            // Lista de ruas
             renderRuas(ruas);
+            renderEmpresasCity(econCity.empresas);
 
-            // Busca ruas
             $('searchRua').addEventListener('input', function() {
                 const termo = this.value.toLowerCase().trim();
                 const filtradas = ruas.filter(r => r.toLowerCase().includes(termo));
                 renderRuas(filtradas);
             });
 
-            // Mapa: carregar GeoJSON do município
+            // Mapa do município
             const mapContainer = $('mapCity');
             mapCity = initMap('mapCity', [-15.7885, -47.8792], 10);
-
             try {
                 const url =
                     `https://servicodados.ibge.gov.br/api/v3/malhas/municipios/${id}?formato=application/vnd.geo+json&qualidade=minima`;
                 const resp = await fetch(url);
                 const geojson = await resp.json();
                 const layer = L.geoJSON(geojson, {
-                    style: { color: '#1a1a2e', weight: 2, fillColor: '#f0c27f', fillOpacity: 0.3 }
+                    style: { color: '#1a1a2e', weight: 4, fillColor: '#f0c27f', fillOpacity: 0.3 }
                 }).addTo(mapCity);
                 mapCity.fitBounds(layer.getBounds());
             } catch (err) {
-                console.warn('Erro ao carregar GeoJSON do município:', err);
-                // fallback: centralizar no estado
+                console.warn('Erro GeoJSON município:', err);
                 const coords = COORDS_ESTADOS[sigla];
-                if (coords) {
-                    mapCity.setView(coords, 8);
-                }
+                if (coords) mapCity.setView(coords, 8);
             }
         }
 
@@ -895,22 +1050,59 @@
             container.innerHTML = lista.map(r => `<div class="item">${r}</div>`).join('');
         }
 
+        function renderEmpresasCity(empresas) {
+            const container = $('empresasCityContainer');
+            let html = `<h4 style="margin-bottom:12px;">Empresas do município</h4>
+                        <table class="empresa-table" id="empresaTableCity">
+                            <thead><tr>
+                                <th data-sort="nome">Nome <span class="sort-indicator">⇅</span></th>
+                                <th data-sort="faturamento">Faturamento (R$ mi) <span class="sort-indicator">⇅</span></th>
+                                <th data-sort="empregados">Empregados <span class="sort-indicator">⇅</span></th>
+                                <th data-sort="desenvolvimento">Desenvolvimento <span class="sort-indicator">⇅</span></th>
+                            </tr></thead>
+                            <tbody id="empresaTableBodyCity"></tbody>
+                        </table>`;
+            container.innerHTML = html;
+            const tbody = document.getElementById('empresaTableBodyCity');
+
+            function renderEmpresasOrdenadas(empresas, sortBy = 'faturamento', desc = true) {
+                const sorted = [...empresas].sort((a, b) => {
+                    if (a[sortBy] < b[sortBy]) return desc ? 1 : -1;
+                    if (a[sortBy] > b[sortBy]) return desc ? -1 : 1;
+                    return 0;
+                });
+                tbody.innerHTML = sorted.map(e => `
+                    <tr><td>${e.nome}</td><td>${e.faturamento}</td><td>${e.empregados}</td><td>${e.desenvolvimento}</td></tr>
+                `).join('');
+            }
+            renderEmpresasOrdenadas(empresas);
+            document.querySelectorAll('#empresaTableCity th').forEach(th => {
+                th.style.cursor = 'pointer';
+                th.addEventListener('click', function() {
+                    const sortBy = this.dataset.sort;
+                    const current = this.querySelector('.sort-indicator');
+                    const desc = current.textContent.includes('⇅') ? true : false;
+                    document.querySelectorAll('#empresaTableCity th .sort-indicator').forEach(el => el.textContent =
+                        '⇅');
+                    current.textContent = desc ? '▼' : '▲';
+                    renderEmpresasOrdenadas(empresas, sortBy, desc);
+                });
+            });
+        }
+
         // ============================================================
         //  VOLTAR HOME
         // ============================================================
         function voltarHome() {
             showView('viewHome');
-            // Resetar mapas?
             if (mapState) { mapState.remove();
                 mapState = null; }
             if (mapCity) { mapCity.remove();
                 mapCity = null; }
-            // Re-inicializar mapa home se necessário
             if (!mapHome) {
                 mapHome = initMap('mapHome');
                 adicionarMarcadoresEstados(mapHome);
             }
-            // Limpar buscas
             $('searchEstado').value = '';
             $('searchMunicipio').value = '';
             $('searchMunicipioState').value = '';
@@ -924,8 +1116,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             carregarDados();
         });
-
-        // Expor função para botão home
         $('btnHome').addEventListener('click', voltarHome);
     </script>
 </body>

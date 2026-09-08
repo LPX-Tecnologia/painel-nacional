@@ -441,6 +441,10 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
             object-fit: cover;
             background: #f0f0f0;
+            transition: transform 0.2s;
+        }
+        .flag-marker img:hover {
+            transform: scale(1.2);
         }
         .flag-marker .fallback {
             width: 40px;
@@ -455,6 +459,20 @@
             font-size: 14px;
             border: 2px solid white;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+        .flag-marker .fallback:hover {
+            transform: scale(1.2);
+        }
+
+        /* Estilo para as bordas dos municípios (muro) */
+        .municipio-muro {
+            color: #1a73e8;
+            weight: 4;
+            opacity: 0.9;
+            fillColor: transparent;
+            fillOpacity: 0;
+            dashArray: '2 2';
         }
 
         @media (max-width: 700px) {
@@ -738,7 +756,6 @@
             img.style.height = '100%';
             img.style.objectFit = 'cover';
             img.onerror = function() {
-                // Fallback: mostrar sigla em círculo
                 const fallback = document.createElement('div');
                 fallback.style.width = '100%';
                 fallback.style.height = '100%';
@@ -828,6 +845,11 @@
                     if (closest) {
                         abrirEstado(closest.sigla);
                     }
+                });
+
+                // Hover nos marcadores: aumentar escala
+                mapHome.on('mouseover', function(e) {
+                    // não fazemos nada aqui, o hover é tratado no marcador individual
                 });
 
                 $('searchEstado').addEventListener('input', filtrarEstados);
@@ -929,7 +951,7 @@
         }
 
         // ============================================================
-        //  MARCADORES COM BANDEIRAS CIRCULARES NO MAPA HOME
+        //  MARCADORES COM BANDEIRAS CIRCULARES NO MAPA HOME (com hover)
         // ============================================================
         function adicionarMarcadoresEstados(map) {
             estados.forEach(uf => {
@@ -938,18 +960,37 @@
                 const flagUrl = getFlagUrl(uf.sigla);
                 const icon = L.divIcon({
                     className: 'flag-marker',
-                    html: `<img src="${flagUrl}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${uf.sigla}</div>';" style="width:40px;height:40px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);object-fit:cover;background:#f0f0f0;" />`,
+                    html: `<img src="${flagUrl}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${uf.sigla}</div>';" style="width:40px;height:40px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);object-fit:cover;background:#f0f0f0;transition:transform 0.2s;" />`,
                     iconSize: [40, 40],
                     iconAnchor: [20, 20]
                 });
                 const marker = L.marker(coords, { icon: icon }).addTo(map);
                 marker.bindPopup(`<strong>${uf.nome}</strong><br>${municipiosPorEstado[uf.sigla]?.length || 0} municípios`);
                 marker.on('click', () => abrirEstado(uf.sigla));
+                // Hover: aumentar o marcador
+                marker.on('mouseover', function() {
+                    const el = this._icon;
+                    if (el) {
+                        const img = el.querySelector('img');
+                        if (img) img.style.transform = 'scale(1.2)';
+                        const fallback = el.querySelector('.fallback');
+                        if (fallback) fallback.style.transform = 'scale(1.2)';
+                    }
+                });
+                marker.on('mouseout', function() {
+                    const el = this._icon;
+                    if (el) {
+                        const img = el.querySelector('img');
+                        if (img) img.style.transform = 'scale(1)';
+                        const fallback = el.querySelector('.fallback');
+                        if (fallback) fallback.style.transform = 'scale(1)';
+                    }
+                });
             });
         }
 
         // ============================================================
-        //  ABRIR ESTADO
+        //  ABRIR ESTADO - com municípios em "muro" e bandeiras
         // ============================================================
         async function abrirEstado(sigla) {
             const uf = estados.find(e => e.sigla === sigla);
@@ -994,9 +1035,11 @@
             renderMunicipiosState(municipiosUF);
             renderEmpresasState(econ.empresas);
 
-            // Mapa do estado com bandeira circular no centro
+            // Mapa do estado com bandeira central e municípios em muro
             const mapContainer = $('mapState');
             mapState = initMap('mapState', [-15.7885, -47.8792], 5);
+
+            // Carregar malha do estado (muro principal)
             try {
                 const url =
                     `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${sigla}?formato=application/vnd.geo+json&qualidade=minima`;
@@ -1008,9 +1051,10 @@
                         weight: 6,
                         opacity: 0.9,
                         fillColor: '#f0c27f',
-                        fillOpacity: 0.2,
+                        fillOpacity: 0.15,
                     }
                 }).addTo(mapState);
+                // Borda secundária
                 L.geoJSON(geojson, {
                     style: {
                         color: '#FFD700',
@@ -1022,6 +1066,7 @@
                 }).addTo(mapState);
                 mapState.fitBounds(layer.getBounds());
                 const center = layer.getBounds().getCenter();
+                // Bandeira do estado no centro
                 const flagIcon = L.divIcon({
                     className: 'flag-marker',
                     html: `<img src="${getFlagUrl(sigla)}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${sigla}</div>';" style="width:48px;height:48px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);object-fit:cover;background:#f0f0f0;" />`,
@@ -1029,8 +1074,53 @@
                     iconAnchor: [24, 24]
                 });
                 L.marker(center, { icon: flagIcon }).addTo(mapState);
+
+                // Agora carregar as malhas dos municípios (muro de outra cor) e bandeiras
+                // Vamos limitar a 20 municípios para não sobrecarregar, mas pode ser todos
+                // Para demonstração, pegamos os primeiros 20 (ou todos se for pequeno)
+                const municipiosParaMostrar = municipiosUF.length > 20 ? municipiosUF.slice(0, 20) : municipiosUF;
+                // Mostrar um aviso se houver mais de 20
+                if (municipiosUF.length > 20) {
+                    console.log('Mostrando apenas 20 municípios para performance.');
+                }
+                // Para cada município, buscar a malha
+                for (const m of municipiosParaMostrar) {
+                    try {
+                        const urlMun =
+                            `https://servicodados.ibge.gov.br/api/v3/malhas/municipios/${m.id}?formato=application/vnd.geo+json&qualidade=minima`;
+                        const respMun = await fetch(urlMun);
+                        const geojsonMun = await respMun.json();
+                        // Adicionar com estilo de muro (cor azul)
+                        L.geoJSON(geojsonMun, {
+                            style: {
+                                color: '#1a73e8',
+                                weight: 3,
+                                opacity: 0.7,
+                                fillColor: 'transparent',
+                                fillOpacity: 0,
+                                dashArray: '3 3'
+                            }
+                        }).addTo(mapState);
+                        // Adicionar bandeira do estado no centro do município (como placeholder)
+                        const centerMun = L.geoJSON(geojsonMun).getBounds().getCenter();
+                        const flagIconMun = L.divIcon({
+                            className: 'flag-marker',
+                            html: `<img src="${getFlagUrl(sigla)}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${m.nome.substring(0,2)}</div>';" style="width:28px;height:28px;border-radius:50%;border:1px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);object-fit:cover;background:#f0f0f0;" title="${m.nome}" />`,
+                            iconSize: [28, 28],
+                            iconAnchor: [14, 14]
+                        });
+                        L.marker(centerMun, { icon: flagIconMun }).addTo(mapState)
+                            .bindPopup(`<strong>${m.nome}</strong><br>Clique para ver detalhes`)
+                            .on('click', () => abrirMunicipio(m.id, sigla));
+                    } catch (err) {
+                        console.warn('Erro ao carregar malha do município', m.nome, err);
+                    }
+                }
+                // Ajustar o zoom para o estado
+                mapState.fitBounds(layer.getBounds());
+
             } catch (err) {
-                console.warn('Erro GeoJSON:', err);
+                console.warn('Erro GeoJSON estado:', err);
                 const coords = COORDS_ESTADOS[sigla];
                 if (coords) {
                     mapState.setView(coords, 7);

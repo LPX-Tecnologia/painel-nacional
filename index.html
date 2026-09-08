@@ -249,11 +249,10 @@
             margin-top: 2px;
         }
         .estado-card .flag-icon {
-            width: 40px;
-            height: 30px;
+            width: 50px;
+            height: 35px;
             object-fit: cover;
             border-radius: 4px;
-            margin-bottom: 6px;
             border: 1px solid #ddd;
         }
 
@@ -281,6 +280,9 @@
         .view-header h2 {
             font-size: 32px;
             font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         .view-header .badge {
             background: #1a1a2e;
@@ -289,6 +291,13 @@
             border-radius: 40px;
             font-weight: 600;
             font-size: 14px;
+        }
+        .view-header .flag-icon-header {
+            width: 48px;
+            height: 34px;
+            border-radius: 6px;
+            border: 2px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .view-stats {
             display: flex;
@@ -390,6 +399,18 @@
             display: block;
         }
 
+        .flag-marker {
+            text-align: center;
+            line-height: 30px;
+        }
+        .flag-marker img {
+            width: 40px;
+            height: 30px;
+            border-radius: 4px;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
         @media (max-width: 700px) {
             .header h1 {
                 font-size: 20px;
@@ -420,24 +441,6 @@
         }
         .mt-16 {
             margin-top: 16px;
-        }
-        .flag-marker {
-            text-align: center;
-            line-height: 30px;
-        }
-        .flag-marker img {
-            width: 32px;
-            height: 24px;
-            border-radius: 4px;
-            border: 2px solid white;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        .estado-card .flag-icon {
-            width: 50px;
-            height: 35px;
-            object-fit: cover;
-            border-radius: 4px;
-            border: 1px solid #ddd;
         }
     </style>
 </head>
@@ -475,7 +478,6 @@
                 <span class="badge" id="stateBadge">UF</span>
             </div>
             <div class="view-stats" id="stateStats"></div>
-            <!-- Abas: Municípios, Empresas -->
             <div class="tab-bar">
                 <button class="active-tab" data-tab="tabMunicipiosState">Municípios</button>
                 <button data-tab="tabEmpresasState">Empresas (Ranking)</button>
@@ -499,7 +501,10 @@
         <!-- VIEW CITY -->
         <div id="viewCity" class="view">
             <div class="view-header">
-                <h2 id="cityTitle">Município</h2>
+                <h2>
+                    <img id="cityFlag" class="flag-icon-header" src="" alt="Bandeira" />
+                    <span id="cityTitle">Município</span>
+                </h2>
                 <span class="badge" id="cityBadge">UF</span>
             </div>
             <div class="view-stats" id="cityStats"></div>
@@ -529,27 +534,57 @@
         // ============================================================
         //  DADOS MOCK (bairros, ruas, empresas, indústria)
         // ============================================================
-        const MOCK_BAIRROS = ['Centro', 'Jardim América', 'Vila Nova', 'Bela Vista', 'Santa Teresa',
+        const MOCK_BAIRROS_BASE = ['Centro', 'Jardim América', 'Vila Nova', 'Bela Vista', 'Santa Teresa',
             'Copacabana', 'Ipanema', 'Leblon', 'Barra', 'Tijuca',
             'Mooca', 'Vila Mariana', 'Pinheiros', 'Butantã', 'Morumbi',
             'Boa Viagem', 'Pina', 'Candeias', 'Madalena', 'Espinheiro'
         ];
-        const MOCK_RUAS = ['Rua das Flores', 'Avenida Brasil', 'Rua XV de Novembro', 'Rua Marechal Deodoro',
+        const MOCK_RUAS_BASE = ['Rua das Flores', 'Avenida Brasil', 'Rua XV de Novembro', 'Rua Marechal Deodoro',
             'Avenida Getúlio Vargas', 'Rua Dom Pedro I', 'Rua José Bonifácio', 'Rua Duque de Caxias',
             'Avenida Rio Branco', 'Rua Tiradentes', 'Rua Santo Antônio', 'Rua São João',
             'Avenida Beira-Mar', 'Rua do Comércio', 'Rua das Palmeiras', 'Rua da Saudade',
             'Travessa da Alegria', 'Avenida dos Estados', 'Rua da Independência', 'Rua da Paz'
         ];
-        // Setores industriais por estado (mock)
         const SETORES = ['Tecnologia', 'Agronegócio', 'Indústria Automotiva', 'Petroquímica', 'Têxtil', 'Siderurgia',
             'Turismo', 'Finanças', 'Logística', 'Energia'
         ];
-
-        // Gerador de empresas mock
         const NOMES_EMPRESAS = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Omega', 'Sigma', 'Tau', 'Upsilon', 'Phi', 'Psi',
             'Solar', 'Lunar', 'Nova', 'Vera', 'Certa', 'Forte', 'Rápida', 'União', 'Nacional', 'Brasil'
         ];
 
+        // Gerador de dados mock baseado na população (mais realista)
+        function gerarDadosMock(cidadeId, populacao) {
+            // Número de bairros: entre 5 e 50, proporcional à população
+            const qtdBairros = Math.max(5, Math.min(50, Math.floor(populacao / 15000) + 5));
+            const qtdRuas = Math.max(10, Math.min(200, Math.floor(populacao / 5000) + 10));
+
+            const bairros = [];
+            for (let i = 0; i < qtdBairros; i++) {
+                bairros.push(MOCK_BAIRROS_BASE[i % MOCK_BAIRROS_BASE.length] + (i >= MOCK_BAIRROS_BASE.length ? ' ' + (i + 1) :
+                    ''));
+            }
+            const ruas = [];
+            for (let i = 0; i < qtdRuas; i++) {
+                ruas.push(MOCK_RUAS_BASE[i % MOCK_RUAS_BASE.length] + (i >= MOCK_RUAS_BASE.length ? ' ' + (i + 1) : ''));
+            }
+            return {
+                populacao: populacao,
+                bairros: bairros,
+                ruas: ruas
+            };
+        }
+        const mockCache = new Map();
+
+        function getDadosMock(cidadeId, populacaoBase) {
+            if (!mockCache.has(cidadeId)) {
+                // População real não temos, usamos a base (entre 50k e 5M)
+                const pop = Math.floor(populacaoBase * (0.6 + Math.random() * 0.8));
+                mockCache.set(cidadeId, gerarDadosMock(cidadeId, pop));
+            }
+            return mockCache.get(cidadeId);
+        }
+
+        // Empresas
         function gerarEmpresa(id, estadoSigla, cidadeNome) {
             const nome = NOMES_EMPRESAS[Math.floor(Math.random() * NOMES_EMPRESAS.length)] +
                 (Math.random() > 0.5 ? ' ' + ['Indústria', 'Comércio', 'Serviços', 'Logística', 'Consultoria'][Math.floor(Math
@@ -573,7 +608,6 @@
             for (let i = 0; i < numEmpresas; i++) {
                 empresas.push(gerarEmpresa(i, estadoSigla, cidadeNome));
             }
-            // Ordenar por faturamento decrescente
             empresas.sort((a, b) => b.faturamento - a.faturamento);
             const setor = SETORES[Math.floor(Math.random() * SETORES.length)];
             return {
@@ -583,7 +617,6 @@
             };
         }
 
-        // Cache de dados econômicos por estado e município
         const econCacheState = new Map();
         const econCacheCity = new Map();
 
@@ -604,35 +637,6 @@
                 econCacheCity.set(key, data);
             }
             return econCacheCity.get(key);
-        }
-
-        // ============================================================
-        //  DADOS MOCK (bairros e ruas)
-        // ============================================================
-        function gerarDadosMock(cidadeId, populacaoBase) {
-            const qtdBairros = Math.floor(Math.random() * 20) + 5;
-            const qtdRuas = Math.floor(Math.random() * 40) + 10;
-            const bairros = [];
-            for (let i = 0; i < qtdBairros; i++) {
-                bairros.push(MOCK_BAIRROS[i % MOCK_BAIRROS.length] + (i >= MOCK_BAIRROS.length ? ' ' + (i + 1) : ''));
-            }
-            const ruas = [];
-            for (let i = 0; i < qtdRuas; i++) {
-                ruas.push(MOCK_RUAS[i % MOCK_RUAS.length] + (i >= MOCK_RUAS.length ? ' ' + (i + 1) : ''));
-            }
-            return {
-                populacao: Math.floor(populacaoBase * (0.8 + Math.random() * 0.4)),
-                bairros: bairros,
-                ruas: ruas
-            };
-        }
-        const mockCache = new Map();
-
-        function getDadosMock(cidadeId, populacaoBase) {
-            if (!mockCache.has(cidadeId)) {
-                mockCache.set(cidadeId, gerarDadosMock(cidadeId, populacaoBase));
-            }
-            return mockCache.get(cidadeId);
         }
 
         // ============================================================
@@ -835,9 +839,9 @@
                 const flagUrl = getFlagUrl(uf.sigla);
                 const icon = L.divIcon({
                     className: 'flag-marker',
-                    html: `<img src="${flagUrl}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ccc%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.35em%22 font-size=%2220%22 fill=%22%23666%22%3E${uf.sigla}%3C/text%3E%3C/svg%3E'" style="width:32px;height:24px;border-radius:4px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);" />`,
-                    iconSize: [32, 24],
-                    iconAnchor: [16, 12]
+                    html: `<img src="${flagUrl}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ccc%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.35em%22 font-size=%2220%22 fill=%22%23666%22%3E${uf.sigla}%3C/text%3E%3C/svg%3E'" style="width:40px;height:30px;border-radius:4px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);" />`,
+                    iconSize: [40, 30],
+                    iconAnchor: [20, 15]
                 });
                 const marker = L.marker(coords, { icon: icon }).addTo(map);
                 marker.bindPopup(`<strong>${uf.nome}</strong><br>${municipiosPorEstado[uf.sigla]?.length || 0} municípios`);
@@ -855,23 +859,28 @@
             if (mapState) { mapState.remove();
                 mapState = null; }
             showView('viewState');
-            $('stateTitle').textContent = uf.nome;
+            // Cabeçalho com bandeira
+            const flagUrl = getFlagUrl(sigla);
+            $('stateTitle').innerHTML = `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid #ddd;vertical-align:middle;margin-right:10px;" onerror="this.style.display='none'" /> ${uf.nome}`;
             $('stateBadge').textContent = uf.sigla;
 
             const municipiosUF = municipiosPorEstado[sigla] || [];
             const totalMunicipios = municipiosUF.length;
-            // Dados econômicos
             const econ = getDadosEconomicosEstado(sigla);
             const totalEmpresas = econ.total_empresas;
             const setor = econ.setor_industrial;
 
+            // Calcular totais de bairros e ruas somando os municípios
             let totalBairrosState = 0,
                 totalRuasState = 0;
             municipiosUF.forEach(m => {
-                const mock = getDadosMock(m.id, 50000);
+                // População base (estimada) - usamos o id para gerar uma base
+                const popBase = (m.id % 10000) * 5000 + 50000;
+                const mock = getDadosMock(m.id, popBase);
                 totalBairrosState += mock.bairros.length;
                 totalRuasState += mock.ruas.length;
             });
+
             $('stateStats').innerHTML = `
                 <div class="stat-mini">🏙️ <span>Municípios</span> ${totalMunicipios}</div>
                 <div class="stat-mini">🏘️ <span>Bairros</span> ${totalBairrosState.toLocaleString()}</div>
@@ -880,12 +889,10 @@
                 <div class="stat-mini">🏢 <span>Empresas</span> ${totalEmpresas}</div>
             `;
 
-            // Lista de municípios
             renderMunicipiosState(municipiosUF);
-            // Empresas do estado
             renderEmpresasState(econ.empresas);
 
-            // Mapa do estado com borda "muro"
+            // Mapa do estado com bandeira no centro
             const mapContainer = $('mapState');
             mapState = initMap('mapState', [-15.7885, -47.8792], 5);
             try {
@@ -893,7 +900,6 @@
                     `https://servicodados.ibge.gov.br/api/v3/malhas/estados/${sigla}?formato=application/vnd.geo+json&qualidade=minima`;
                 const resp = await fetch(url);
                 const geojson = await resp.json();
-                // Estilo com borda grossa e cor viva (muro)
                 const layer = L.geoJSON(geojson, {
                     style: {
                         color: '#FF4500',
@@ -901,10 +907,9 @@
                         opacity: 0.9,
                         fillColor: '#f0c27f',
                         fillOpacity: 0.2,
-                        dashArray: null
                     }
                 }).addTo(mapState);
-                // Adicionar uma segunda linha mais fina para dar efeito de muro
+                // Borda secundária
                 L.geoJSON(geojson, {
                     style: {
                         color: '#FFD700',
@@ -915,13 +920,30 @@
                     }
                 }).addTo(mapState);
                 mapState.fitBounds(layer.getBounds());
+                // Adicionar marcador com bandeira no centro do estado
+                const center = layer.getBounds().getCenter();
+                const flagIcon = L.divIcon({
+                    className: 'flag-marker',
+                    html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
+                    iconSize: [48, 34],
+                    iconAnchor: [24, 17]
+                });
+                L.marker(center, { icon: flagIcon }).addTo(mapState);
             } catch (err) {
                 console.warn('Erro GeoJSON:', err);
                 const coords = COORDS_ESTADOS[sigla];
-                if (coords) mapState.setView(coords, 7);
+                if (coords) {
+                    mapState.setView(coords, 7);
+                    const flagIcon = L.divIcon({
+                        className: 'flag-marker',
+                        html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
+                        iconSize: [48, 34],
+                        iconAnchor: [24, 17]
+                    });
+                    L.marker(coords, { icon: flagIcon }).addTo(mapState);
+                }
             }
 
-            // Busca municípios no state
             $('searchMunicipioState').addEventListener('input', function() {
                 const termo = this.value.toLowerCase().trim();
                 const filtrados = municipiosUF.filter(m => m.nome.toLowerCase().includes(termo));
@@ -959,6 +981,7 @@
                         </table>`;
             container.innerHTML = html;
             const tbody = document.getElementById('empresaTableBodyState');
+
             function renderEmpresasOrdenadas(empresas, sortBy = 'faturamento', desc = true) {
                 const sorted = [...empresas].sort((a, b) => {
                     if (a[sortBy] < b[sortBy]) return desc ? 1 : -1;
@@ -970,14 +993,12 @@
                 `).join('');
             }
             renderEmpresasOrdenadas(empresas);
-            // Ordenação
             document.querySelectorAll('#empresaTableState th').forEach(th => {
                 th.style.cursor = 'pointer';
                 th.addEventListener('click', function() {
                     const sortBy = this.dataset.sort;
                     const current = this.querySelector('.sort-indicator');
                     const desc = current.textContent.includes('⇅') ? true : false;
-                    // atualizar todos indicadores para ⇅
                     document.querySelectorAll('#empresaTableState th .sort-indicator').forEach(el => el.textContent =
                         '⇅');
                     current.textContent = desc ? '▼' : '▲';
@@ -997,14 +1018,20 @@
             if (mapCity) { mapCity.remove();
                 mapCity = null; }
             showView('viewCity');
+
+            // Bandeira no cabeçalho
+            const flagUrl = getFlagUrl(sigla);
+            $('cityFlag').src = flagUrl;
+            $('cityFlag').onerror = function() { this.style.display = 'none'; };
             $('cityTitle').textContent = municipio.nome;
             $('cityBadge').textContent = sigla;
 
-            const mock = getDadosMock(id, 50000);
+            // Dados mock com população baseada no ID (estimativa)
+            const popBase = (id % 10000) * 5000 + 50000;
+            const mock = getDadosMock(id, popBase);
             const pop = mock.populacao;
             const bairros = mock.bairros;
             const ruas = mock.ruas;
-            // Dados econômicos do município
             const econCity = getDadosEconomicosCity(id, municipio.nome, sigla);
             const totalEmpresasCity = econCity.total_empresas;
             const setorCity = econCity.setor_industrial;
@@ -1026,7 +1053,7 @@
                 renderRuas(filtradas);
             });
 
-            // Mapa do município
+            // Mapa do município com bandeira no centro
             const mapContainer = $('mapCity');
             mapCity = initMap('mapCity', [-15.7885, -47.8792], 10);
             try {
@@ -1038,10 +1065,28 @@
                     style: { color: '#1a1a2e', weight: 4, fillColor: '#f0c27f', fillOpacity: 0.3 }
                 }).addTo(mapCity);
                 mapCity.fitBounds(layer.getBounds());
+                // Bandeira no centro
+                const center = layer.getBounds().getCenter();
+                const flagIcon = L.divIcon({
+                    className: 'flag-marker',
+                    html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
+                    iconSize: [48, 34],
+                    iconAnchor: [24, 17]
+                });
+                L.marker(center, { icon: flagIcon }).addTo(mapCity);
             } catch (err) {
                 console.warn('Erro GeoJSON município:', err);
                 const coords = COORDS_ESTADOS[sigla];
-                if (coords) mapCity.setView(coords, 8);
+                if (coords) {
+                    mapCity.setView(coords, 8);
+                    const flagIcon = L.divIcon({
+                        className: 'flag-marker',
+                        html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
+                        iconSize: [48, 34],
+                        iconAnchor: [24, 17]
+                    });
+                    L.marker(coords, { icon: flagIcon }).addTo(mapCity);
+                }
             }
         }
 

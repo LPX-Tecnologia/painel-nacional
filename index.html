@@ -249,11 +249,26 @@
             margin-top: 2px;
         }
         .estado-card .flag-icon {
-            width: 50px;
-            height: 35px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             object-fit: cover;
-            border-radius: 4px;
-            border: 1px solid #ddd;
+            border: 2px solid #ddd;
+            background: #f0f0f0;
+        }
+        .estado-card .flag-fallback {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #1a1a2e;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            margin: 0 auto;
+            border: 2px solid #ddd;
         }
 
         .map-wrapper {
@@ -294,11 +309,25 @@
         }
         .view-header .flag-icon-header {
             width: 48px;
-            height: 34px;
-            border-radius: 6px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
             border: 2px solid #ddd;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: #f0f0f0;
         }
+        .view-header .flag-fallback-header {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #1a1a2e;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 16px;
+        }
+
         .view-stats {
             display: flex;
             gap: 20px;
@@ -399,14 +428,31 @@
             display: block;
         }
 
+        /* Marcador circular com bandeira */
         .flag-marker {
             text-align: center;
-            line-height: 30px;
+            line-height: 40px;
         }
         .flag-marker img {
             width: 40px;
-            height: 30px;
-            border-radius: 4px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+        .flag-marker .fallback {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a1a2e;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 14px;
             border: 2px solid white;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
@@ -502,7 +548,7 @@
         <div id="viewCity" class="view">
             <div class="view-header">
                 <h2>
-                    <img id="cityFlag" class="flag-icon-header" src="" alt="Bandeira" />
+                    <span id="cityFlagContainer"></span>
                     <span id="cityTitle">Município</span>
                 </h2>
                 <span class="badge" id="cityBadge">UF</span>
@@ -552,12 +598,9 @@
             'Solar', 'Lunar', 'Nova', 'Vera', 'Certa', 'Forte', 'Rápida', 'União', 'Nacional', 'Brasil'
         ];
 
-        // Gerador de dados mock baseado na população (mais realista)
         function gerarDadosMock(cidadeId, populacao) {
-            // Número de bairros: entre 5 e 50, proporcional à população
             const qtdBairros = Math.max(5, Math.min(50, Math.floor(populacao / 15000) + 5));
             const qtdRuas = Math.max(10, Math.min(200, Math.floor(populacao / 5000) + 10));
-
             const bairros = [];
             for (let i = 0; i < qtdBairros; i++) {
                 bairros.push(MOCK_BAIRROS_BASE[i % MOCK_BAIRROS_BASE.length] + (i >= MOCK_BAIRROS_BASE.length ? ' ' + (i + 1) :
@@ -577,14 +620,12 @@
 
         function getDadosMock(cidadeId, populacaoBase) {
             if (!mockCache.has(cidadeId)) {
-                // População real não temos, usamos a base (entre 50k e 5M)
                 const pop = Math.floor(populacaoBase * (0.6 + Math.random() * 0.8));
                 mockCache.set(cidadeId, gerarDadosMock(cidadeId, pop));
             }
             return mockCache.get(cidadeId);
         }
 
-        // Empresas
         function gerarEmpresa(id, estadoSigla, cidadeNome) {
             const nome = NOMES_EMPRESAS[Math.floor(Math.random() * NOMES_EMPRESAS.length)] +
                 (Math.random() > 0.5 ? ' ' + ['Indústria', 'Comércio', 'Serviços', 'Logística', 'Consultoria'][Math.floor(Math
@@ -678,6 +719,44 @@
             return FLAG_BASE_URL + sigla + '.svg?raw=true';
         }
 
+        // Cria elemento de bandeira circular com fallback
+        function createFlagElement(sigla, size = 48) {
+            const container = document.createElement('span');
+            container.style.display = 'inline-block';
+            container.style.width = size + 'px';
+            container.style.height = size + 'px';
+            container.style.borderRadius = '50%';
+            container.style.overflow = 'hidden';
+            container.style.border = '2px solid #ddd';
+            container.style.background = '#f0f0f0';
+            container.style.flexShrink = '0';
+
+            const img = document.createElement('img');
+            img.src = getFlagUrl(sigla);
+            img.alt = 'Bandeira ' + sigla;
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.objectFit = 'cover';
+            img.onerror = function() {
+                // Fallback: mostrar sigla em círculo
+                const fallback = document.createElement('div');
+                fallback.style.width = '100%';
+                fallback.style.height = '100%';
+                fallback.style.display = 'flex';
+                fallback.style.alignItems = 'center';
+                fallback.style.justifyContent = 'center';
+                fallback.style.background = '#1a1a2e';
+                fallback.style.color = 'white';
+                fallback.style.fontWeight = '800';
+                fallback.style.fontSize = (size * 0.4) + 'px';
+                fallback.textContent = sigla;
+                container.innerHTML = '';
+                container.appendChild(fallback);
+            };
+            container.appendChild(img);
+            return container;
+        }
+
         // ============================================================
         //  ESTADO GLOBAL
         // ============================================================
@@ -732,6 +811,25 @@
                 renderHome();
                 mapHome = initMap('mapHome');
                 adicionarMarcadoresEstados(mapHome);
+                // Clique no mapa home: seleciona o estado mais próximo
+                mapHome.on('click', function(e) {
+                    const latlng = e.latlng;
+                    let closest = null;
+                    let minDist = Infinity;
+                    estados.forEach(uf => {
+                        const coords = COORDS_ESTADOS[uf.sigla];
+                        if (!coords) return;
+                        const dist = latlng.distanceTo(L.latLng(coords));
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closest = uf;
+                        }
+                    });
+                    if (closest) {
+                        abrirEstado(closest.sigla);
+                    }
+                });
+
                 $('searchEstado').addEventListener('input', filtrarEstados);
                 $('searchMunicipio').addEventListener('input', filtrarMunicipiosHome);
                 $('btnBack').addEventListener('click', voltarHome);
@@ -794,9 +892,10 @@
             const grid = $('estadosGrid');
             grid.innerHTML = lista.map(uf => {
                 const count = municipiosPorEstado[uf.sigla] ? municipiosPorEstado[uf.sigla].length : 0;
+                const flagHtml = `<img class="flag-icon" src="${getFlagUrl(uf.sigla)}" alt="Bandeira ${uf.sigla}" onerror="this.style.display='none'; this.parentElement.querySelector('.flag-fallback').style.display='flex';" /><div class="flag-fallback" style="display:none;">${uf.sigla}</div>`;
                 return `
                     <div class="estado-card" data-sigla="${uf.sigla}">
-                        <img class="flag-icon" src="${getFlagUrl(uf.sigla)}" alt="Bandeira ${uf.sigla}" onerror="this.style.display='none'" />
+                        ${flagHtml}
                         <div class="sigla">${uf.sigla}</div>
                         <div class="nome">${uf.nome}</div>
                         <div class="cidade-count">${count} municípios</div>
@@ -830,7 +929,7 @@
         }
 
         // ============================================================
-        //  MARCADORES COM BANDEIRAS NO MAPA HOME
+        //  MARCADORES COM BANDEIRAS CIRCULARES NO MAPA HOME
         // ============================================================
         function adicionarMarcadoresEstados(map) {
             estados.forEach(uf => {
@@ -839,9 +938,9 @@
                 const flagUrl = getFlagUrl(uf.sigla);
                 const icon = L.divIcon({
                     className: 'flag-marker',
-                    html: `<img src="${flagUrl}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23ccc%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.35em%22 font-size=%2220%22 fill=%22%23666%22%3E${uf.sigla}%3C/text%3E%3C/svg%3E'" style="width:40px;height:30px;border-radius:4px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);" />`,
-                    iconSize: [40, 30],
-                    iconAnchor: [20, 15]
+                    html: `<img src="${flagUrl}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${uf.sigla}</div>';" style="width:40px;height:40px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);object-fit:cover;background:#f0f0f0;" />`,
+                    iconSize: [40, 40],
+                    iconAnchor: [20, 20]
                 });
                 const marker = L.marker(coords, { icon: icon }).addTo(map);
                 marker.bindPopup(`<strong>${uf.nome}</strong><br>${municipiosPorEstado[uf.sigla]?.length || 0} municípios`);
@@ -859,9 +958,14 @@
             if (mapState) { mapState.remove();
                 mapState = null; }
             showView('viewState');
-            // Cabeçalho com bandeira
-            const flagUrl = getFlagUrl(sigla);
-            $('stateTitle').innerHTML = `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid #ddd;vertical-align:middle;margin-right:10px;" onerror="this.style.display='none'" /> ${uf.nome}`;
+
+            // Cabeçalho com bandeira circular
+            const flagEl = createFlagElement(sigla, 48);
+            const titleContainer = $('stateTitle');
+            titleContainer.innerHTML = '';
+            titleContainer.appendChild(flagEl);
+            titleContainer.appendChild(document.createTextNode(' ' + uf.nome));
+
             $('stateBadge').textContent = uf.sigla;
 
             const municipiosUF = municipiosPorEstado[sigla] || [];
@@ -870,11 +974,9 @@
             const totalEmpresas = econ.total_empresas;
             const setor = econ.setor_industrial;
 
-            // Calcular totais de bairros e ruas somando os municípios
             let totalBairrosState = 0,
                 totalRuasState = 0;
             municipiosUF.forEach(m => {
-                // População base (estimada) - usamos o id para gerar uma base
                 const popBase = (m.id % 10000) * 5000 + 50000;
                 const mock = getDadosMock(m.id, popBase);
                 totalBairrosState += mock.bairros.length;
@@ -892,7 +994,7 @@
             renderMunicipiosState(municipiosUF);
             renderEmpresasState(econ.empresas);
 
-            // Mapa do estado com bandeira no centro
+            // Mapa do estado com bandeira circular no centro
             const mapContainer = $('mapState');
             mapState = initMap('mapState', [-15.7885, -47.8792], 5);
             try {
@@ -909,7 +1011,6 @@
                         fillOpacity: 0.2,
                     }
                 }).addTo(mapState);
-                // Borda secundária
                 L.geoJSON(geojson, {
                     style: {
                         color: '#FFD700',
@@ -920,13 +1021,12 @@
                     }
                 }).addTo(mapState);
                 mapState.fitBounds(layer.getBounds());
-                // Adicionar marcador com bandeira no centro do estado
                 const center = layer.getBounds().getCenter();
                 const flagIcon = L.divIcon({
                     className: 'flag-marker',
-                    html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
-                    iconSize: [48, 34],
-                    iconAnchor: [24, 17]
+                    html: `<img src="${getFlagUrl(sigla)}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${sigla}</div>';" style="width:48px;height:48px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);object-fit:cover;background:#f0f0f0;" />`,
+                    iconSize: [48, 48],
+                    iconAnchor: [24, 24]
                 });
                 L.marker(center, { icon: flagIcon }).addTo(mapState);
             } catch (err) {
@@ -936,9 +1036,9 @@
                     mapState.setView(coords, 7);
                     const flagIcon = L.divIcon({
                         className: 'flag-marker',
-                        html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
-                        iconSize: [48, 34],
-                        iconAnchor: [24, 17]
+                        html: `<img src="${getFlagUrl(sigla)}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${sigla}</div>';" style="width:48px;height:48px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);object-fit:cover;background:#f0f0f0;" />`,
+                        iconSize: [48, 48],
+                        iconAnchor: [24, 24]
                     });
                     L.marker(coords, { icon: flagIcon }).addTo(mapState);
                 }
@@ -1019,14 +1119,15 @@
                 mapCity = null; }
             showView('viewCity');
 
-            // Bandeira no cabeçalho
-            const flagUrl = getFlagUrl(sigla);
-            $('cityFlag').src = flagUrl;
-            $('cityFlag').onerror = function() { this.style.display = 'none'; };
+            // Bandeira circular no cabeçalho
+            const flagContainer = $('cityFlagContainer');
+            flagContainer.innerHTML = '';
+            const flagEl = createFlagElement(sigla, 48);
+            flagContainer.appendChild(flagEl);
+
             $('cityTitle').textContent = municipio.nome;
             $('cityBadge').textContent = sigla;
 
-            // Dados mock com população baseada no ID (estimativa)
             const popBase = (id % 10000) * 5000 + 50000;
             const mock = getDadosMock(id, popBase);
             const pop = mock.populacao;
@@ -1053,7 +1154,7 @@
                 renderRuas(filtradas);
             });
 
-            // Mapa do município com bandeira no centro
+            // Mapa do município com bandeira circular no centro
             const mapContainer = $('mapCity');
             mapCity = initMap('mapCity', [-15.7885, -47.8792], 10);
             try {
@@ -1065,13 +1166,12 @@
                     style: { color: '#1a1a2e', weight: 4, fillColor: '#f0c27f', fillOpacity: 0.3 }
                 }).addTo(mapCity);
                 mapCity.fitBounds(layer.getBounds());
-                // Bandeira no centro
                 const center = layer.getBounds().getCenter();
                 const flagIcon = L.divIcon({
                     className: 'flag-marker',
-                    html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
-                    iconSize: [48, 34],
-                    iconAnchor: [24, 17]
+                    html: `<img src="${getFlagUrl(sigla)}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${sigla}</div>';" style="width:48px;height:48px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);object-fit:cover;background:#f0f0f0;" />`,
+                    iconSize: [48, 48],
+                    iconAnchor: [24, 24]
                 });
                 L.marker(center, { icon: flagIcon }).addTo(mapCity);
             } catch (err) {
@@ -1081,9 +1181,9 @@
                     mapCity.setView(coords, 8);
                     const flagIcon = L.divIcon({
                         className: 'flag-marker',
-                        html: `<img src="${flagUrl}" style="width:48px;height:34px;border-radius:6px;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);" />`,
-                        iconSize: [48, 34],
-                        iconAnchor: [24, 17]
+                        html: `<img src="${getFlagUrl(sigla)}" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'fallback\\'>${sigla}</div>';" style="width:48px;height:48px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);object-fit:cover;background:#f0f0f0;" />`,
+                        iconSize: [48, 48],
+                        iconAnchor: [24, 24]
                     });
                     L.marker(coords, { icon: flagIcon }).addTo(mapCity);
                 }

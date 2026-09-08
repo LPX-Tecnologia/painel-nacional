@@ -180,6 +180,12 @@
                 grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
             }
         }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #8a9bb5;
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
@@ -190,12 +196,12 @@
             <p class="sub">Clique em um estado para explorar em 3D</p>
             <input type="text" id="search-bar" placeholder="🔍 Buscar estado..." />
             <div class="estados-grid" id="estados-grid"></div>
+            <div id="loading-msg" class="loading">Carregando dados...</div>
         </div>
         <div id="canvas-container"></div>
         <div id="info-3d">🖱️ Arraste para girar · Scroll para zoom</div>
     </div>
 
-    <!-- Importação via CDN (mais confiável) -->
     <script type="importmap">
         {
             "imports": {
@@ -221,6 +227,7 @@
         const searchBar = document.getElementById('search-bar');
         const backBtn = document.getElementById('back-btn');
         const container = document.getElementById('canvas-container');
+        const loadingMsg = document.getElementById('loading-msg');
 
         // ============================================================
         //  ESTADO GLOBAL
@@ -229,6 +236,7 @@
         let municipiosPorEstado = {};
         let scene, camera, renderer, labelRenderer, controls;
         let stateGroup = null;
+        let threeInitialized = false;
 
         // ============================================================
         //  FLAGS
@@ -241,12 +249,12 @@
         }
 
         // ============================================================
-        //  INICIALIZAÇÃO THREE.JS
+        //  INICIALIZAÇÃO THREE.JS (chamada APÓS carregar dados)
         // ============================================================
         function initThree() {
-            // Verifica se o container existe
+            if (threeInitialized) return;
             if (!container) {
-                console.error('Container #canvas-container não encontrado!');
+                console.error('Container não encontrado');
                 return;
             }
 
@@ -297,10 +305,12 @@
             window.addEventListener('resize', onResize);
             animate();
 
+            threeInitialized = true;
             console.log('✅ Three.js inicializado com sucesso.');
         }
 
         function onResize() {
+            if (!container || !camera || !renderer || !labelRenderer) return;
             const w = container.clientWidth;
             const h = container.clientHeight;
             camera.aspect = w / h;
@@ -311,6 +321,7 @@
 
         function animate() {
             requestAnimationFrame(animate);
+            if (!controls || !renderer || !labelRenderer || !scene || !camera) return;
             controls.update();
             renderer.render(scene, camera);
             labelRenderer.render(scene, camera);
@@ -321,6 +332,7 @@
         // ============================================================
         async function carregarDados() {
             try {
+                loadingMsg.style.display = 'block';
                 console.log('🔄 Carregando dados do IBGE...');
                 const respEstados = await fetch(
                     'https://servicodados.ibge.gov.br/api/v1/localidades/estados?orderBy=nome');
@@ -332,26 +344,42 @@
                 if (!respMunicipios.ok) throw new Error('Erro ao buscar municípios');
                 const allMunicipios = await respMunicipios.json();
 
+                // Agrupar por UF, ignorando municípios sem microrregiao
                 municipiosPorEstado = {};
                 estados.forEach(uf => { municipiosPorEstado[uf.sigla] = []; });
                 allMunicipios.forEach(m => {
-                    const sigla = m.microrregiao.mesorregiao.UF.sigla;
-                    if (municipiosPorEstado[sigla]) municipiosPorEstado[sigla].push(m);
+                    // Verifica se tem microrregiao e mesorregiao
+                    if (m.microrregiao && m.microrregiao.mesorregiao && m.microrregiao.mesorregiao.UF) {
+                        const sigla = m.microrregiao.mesorregiao.UF.sigla;
+                        if (municipiosPorEstado[sigla]) {
+                            municipiosPorEstado[sigla].push(m);
+                        }
+                    } else {
+                        // Tenta inferir pela UF do município (alguns têm uf diretamente)
+                        if (m.uf && m.uf.sigla) {
+                            const sigla = m.uf.sigla;
+                            if (municipiosPorEstado[sigla]) {
+                                municipiosPorEstado[sigla].push(m);
+                            }
+                        }
+                    }
                 });
                 for (let sigla in municipiosPorEstado) {
                     municipiosPorEstado[sigla].sort((a, b) => a.nome.localeCompare(b.nome));
                 }
 
-                console.log('✅ Dados carregados:', estados.length, 'estados,', allMunicipios.length, 'municípios');
+                console.log('✅ Dados carregados:', estados.length, 'estados, total municípios:', allMunicipios.length);
 
+                loadingMsg.style.display = 'none';
                 renderEstados(estados);
-                initThree();
+                initThree(); // Inicializa THREE após dados carregados
                 selectionScreen.classList.remove('hidden');
                 backBtn.classList.remove('visible');
 
             } catch (err) {
                 console.error('❌ Erro ao carregar dados:', err);
-                alert('Erro ao carregar dados do IBGE. Verifique sua conexão e tente novamente.');
+                loadingMsg.textContent = '❌ Erro ao carregar dados. Tente recarregar a página.';
+                loadingMsg.style.color = '#ff6b6b';
             }
         }
 
@@ -392,6 +420,17 @@
         //  ABRIR ESTADO EM 3D
         // ============================================================
         async function abrirEstado3D(sigla) {
+            // Verificar se a cena foi inicializada
+            if (!threeInitialized || !scene) {
+                console.warn('Three.js não inicializado, aguarde...');
+                // Tenta inicializar novamente
+                initThree();
+                if (!threeInitialized || !scene) {
+                    alert('Aguarde o carregamento completo dos dados.');
+                    return;
+                }
+            }
+
             const uf = estados.find(e => e.sigla === sigla);
             if (!uf) {
                 console.warn('Estado não encontrado:', sigla);
@@ -601,15 +640,17 @@
         //  VOLTAR
         // ============================================================
         function voltarParaSelecao() {
-            if (stateGroup) {
+            if (stateGroup && scene) {
                 scene.remove(stateGroup);
                 stateGroup = null;
             }
             selectionScreen.classList.remove('hidden');
             backBtn.classList.remove('visible');
-            camera.position.set(0, 10, 20);
-            controls.target.set(0, 0, 0);
-            controls.update();
+            if (camera && controls) {
+                camera.position.set(0, 10, 20);
+                controls.target.set(0, 0, 0);
+                controls.update();
+            }
         }
 
         backBtn.addEventListener('click', voltarParaSelecao);
